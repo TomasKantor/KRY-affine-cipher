@@ -4,11 +4,19 @@
 
 using namespace std;
 
-bool handle_arguments(int argc, char *argv[])
+typedef struct Arguments{
+  int a;
+  int b;
+  char type;
+  std::string input_string;
+} arguments;
+
+bool handle_arguments(int argc, char *argv[], Arguments& arguments)
 {
     int opt;
-    int a;
-    int b;
+    int a = -1;
+    int b = -1;
+    char type = 'n';
     std::string input_file_name;
     std::string output_file_name;
     while((opt = getopt(argc, argv, ":edca:b:f:o:")) != -1) 
@@ -16,12 +24,15 @@ bool handle_arguments(int argc, char *argv[])
         switch(opt) 
         {
             case 'e':
+                type = 'e';
                 std::cerr << "encryption\n";
                 break;
             case 'd': 
+                type = 'd';
                 std::cerr << "decryption\n";
                 break;
-            case 'c': 
+            case 'c':
+                type = 'c';
                 std::cerr << "decryption, unknown key\n";
                 break;
             case 'a':
@@ -62,12 +73,98 @@ bool handle_arguments(int argc, char *argv[])
                 break; 
         }
     }
+    for (int index = optind; index < argc; index++)
+    {
+        printf ("Input text is %s\n", argv[index]);
+        arguments.input_string = std::string(argv[index]);
+    }
+
+    arguments.a = a;
+    arguments.b = b;
+    arguments.type = type;
     return true;
+}
+
+int char_to_num(char c)
+{
+    if ( c >= 65 and c <= 90)
+    {
+        return c - 65;
+    }
+    if ( c >= 97 and c <= 122 )
+    {
+        return c - 97;
+    }
+    return -1;
+}
+
+void encrypt(Arguments& arguments)
+{
+    int a = arguments.a;
+    int b = arguments.b;
+
+    for (int i = 0; i < arguments.input_string.length(); i++)
+    {
+        char x = char_to_num(arguments.input_string[i]);
+        if ( x == -1)
+        {
+            std::cout << ' ';
+        }
+        else
+        {
+            std::cout << char((a*x  + b)%26 + 65);
+        }
+    }
+    std::cout << "\n";
+}
+
+int multiplicative_inverse(int a)
+{
+    for (int i = 0; i < 26; i++)
+    {
+        if ( ( i*a ) % 26 == 1 )
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void decrypt(Arguments& arguments)
+{
+    int a_inverse = multiplicative_inverse(arguments.a);
+    int b = arguments.b;
+
+    for (int i = 0; i < arguments.input_string.length(); i++)
+    {
+        char x = char_to_num(arguments.input_string[i]);
+        if ( x == -1)
+        {
+            std::cout << ' ';
+        }
+        else
+        {
+            std::cout << char( ( a_inverse*( (x - b + 26)) )%26 + 65);
+        }
+    }
+    std::cout << "\n";
+}
+
+void choose_job(Arguments& arguments)
+{
+    if (arguments.type == 'e')
+    {
+        encrypt(arguments);
+    }
+    else if (arguments.type == 'd')
+    {
+        decrypt(arguments);
+    }
 }
 
 int main(int argc, char *argv[])
 {
-
-    handle_arguments(argc, argv);
-
+    Arguments arguments;
+    handle_arguments(argc, argv, arguments);
+    choose_job(arguments);
 }
