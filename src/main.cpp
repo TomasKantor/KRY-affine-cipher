@@ -130,24 +130,48 @@ int multiplicative_inverse(int a)
     return -1;
 }
 
-void decrypt(Arguments& arguments)
+std::string decrypt(Arguments& arguments)
 {
     int a_inverse = multiplicative_inverse(arguments.a);
+    if ( a_inverse == -1)
+    {
+        std::cerr << "No inverse for a: " << arguments.a << std::endl;
+        return "";
+    }
     int b = arguments.b;
-
+    std::string answer;
     for (int i = 0; i < arguments.input_string.length(); i++)
     {
         char x = char_to_num(arguments.input_string[i]);
         if ( x == -1)
         {
-            std::cout << ' ';
+            answer += ' ';
         }
         else
         {
-            std::cout << char( ( a_inverse*( (x - b + 26)) )%26 + 65);
+            answer += char( ( a_inverse*( (x - b + 26)) )%26 + 65);
         }
     }
-    std::cout << "\n";
+    return answer;
+}
+
+void find_key_and_decrypt(Arguments& arguments)
+{
+    for ( int a = 0; a < 26; a++)
+    {
+        
+        for ( int b = 0; b < 26; b++ )
+        {
+            arguments.a = a;
+            arguments.b = b;
+            std::string answer = decrypt(arguments);
+            if (answer.length() != 0)
+            {
+                std::cout << "a: " << a << " b: " << b << ' ' << answer << std::endl;
+            }
+            
+        }
+    }
 }
 
 void choose_job(Arguments& arguments)
@@ -158,7 +182,12 @@ void choose_job(Arguments& arguments)
     }
     else if (arguments.type == 'd')
     {
-        decrypt(arguments);
+        std::string answer = decrypt(arguments);
+        std::cout << answer << '\n';
+    }
+    else if (arguments.type == 'c')
+    {
+        find_key_and_decrypt(arguments);
     }
 }
 
