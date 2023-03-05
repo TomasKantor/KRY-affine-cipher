@@ -109,7 +109,6 @@ bool handle_arguments(int argc, char *argv[], Arguments& arguments)
     }
     for (int index = optind; index < argc; index++)
     {
-        // printf ("Input text is %s\n", argv[index]);
         arguments.input_string = std::string(argv[index]);
     }
 
@@ -121,13 +120,13 @@ bool handle_arguments(int argc, char *argv[], Arguments& arguments)
 
 int char_to_num(char c)
 {
-    if ( c >= 65 and c <= 90)
+    if ( c >= 'A' and c <= 'Z')
     {
-        return c - 65;
+        return c - 'A';
     }
-    if ( c >= 97 and c <= 122 )
+    if ( c >= 'a' and c <= 'z' )
     {
-        return c - 97;
+        return c - 'a';
     }
     return -1;
 }
@@ -146,7 +145,7 @@ void encrypt(Arguments& arguments)
         }
         else
         {
-            std::cout << char((a*x  + b)%26 + 65);
+            std::cout << char((a*x  + b) % alphabet_size + 'A');
         }
     }
     std::cout << "\n";
@@ -154,9 +153,9 @@ void encrypt(Arguments& arguments)
 
 int multiplicative_inverse(int a)
 {
-    for (int i = 0; i < 26; i++)
+    for (int i = 0; i < alphabet_size; i++)
     {
-        if ( ( i*a ) % 26 == 1 )
+        if ( ( i*a ) % alphabet_size == 1 )
         {
             return i;
         }
@@ -183,7 +182,7 @@ std::string decrypt(Arguments& arguments)
         }
         else
         {
-            answer += char( ( a_inverse*( (x - b + 26)) )%26 + 65);
+            answer += char( ( a_inverse*( (x - b + alphabet_size)) ) % alphabet_size + 'A');
         }
     }
     return answer;
@@ -191,7 +190,7 @@ std::string decrypt(Arguments& arguments)
 
 std::vector<int> get_counts(std::string str)
 {
-    std::vector<int> counts(26, 0);
+    std::vector<int> counts(alphabet_size, 0);
     for (int i = 0; i < str.size(); i++)
     {
         int num = char_to_num(str[i]);
@@ -206,7 +205,7 @@ std::vector<int> get_counts(std::string str)
 float get_deviation(const std::vector<float> v1, const float v2[])
 {
     float deviation = 0.0;
-    for (int i = 0; i < 26; i++)
+    for (int i = 0; i < alphabet_size; i++)
     {
         deviation += (v1[i] - v2[i])*(v1[i] - v2[i]);
     }
@@ -216,18 +215,18 @@ float get_deviation(const std::vector<float> v1, const float v2[])
 void brute_force_analysis(Arguments& arguments)
 {
     std::vector<int> counts = get_counts(arguments.input_string);
-    std::vector<float> count_guess(26);
+    std::vector<float> count_guess(alphabet_size);
     int sum_counts = std::accumulate(counts.begin(), counts.end(), 0);
     int best_a_inverse;
     int best_b;
-    float best_deviation = 26.0;
+    float best_deviation = alphabet_size;
     for ( int a_inverse : {1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25 })
     {
-        for ( int b = 0; b < 26; b++ )
+        for ( int b = 0; b < alphabet_size; b++ )
         {
-            for ( int x = 0; x < 26; x++)
+            for ( int x = 0; x < alphabet_size; x++)
             {
-                int index_x = ( a_inverse*( (x - b + 26)) )%26;
+                int index_x = ( a_inverse*( (x - b + alphabet_size)) )%alphabet_size;
                 count_guess[index_x] = counts[x] / sum_counts;
             }
             float deviation = get_deviation(count_guess, frequencies);
