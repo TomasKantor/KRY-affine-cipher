@@ -9,7 +9,6 @@
 using namespace std;
 const int alphabet_size = 26;
 
-
 const float frequencies[] = {
 	0.09589269,  //a	
 	0.0177612 ,  //b
@@ -37,35 +36,6 @@ const float frequencies[] = {
 	0.0003591 ,  //x	
     0.02857512,  //y
 	0.03302643,  //z
-};
-
-const char symbols_by_frequency[]{
-	'e', //0.10904081 	
-    'a', //0.09589269 	
-	'o', //0.08029999 
-	'i', //0.06686138 	
-	'n', //0.05917244 
-	'l', //0.05720782 	
-	's', //0.0558597  	
-    't', //0.05385289 
-	'r', //0.04396827 
-	'v', //0.03952464 
-	'd', //0.03774841 	
-	'm', //0.0360545  
-	'u', //0.03579031 
-	'k', //0.03528082 	
-	'z', //0.03302643 
-	'p', //0.03114961 
-	'c', //0.02999077 	
-    'y', //0.02857512 
-	'h', //0.02497482 	
-	'j', //0.02305759 	
-	'b', //0.0177612  
-	'g', //0.00219812 	
-	'f', //0.0017506  
-	'w', //0.00054266 
-	'x', //0.0003591  	
-	'q', //0.00005933 
 };
 
 typedef struct Arguments{
@@ -233,68 +203,6 @@ std::vector<int> get_counts(std::string str)
     return counts;
 }
 
-std::vector<int> arg_max_n(const std::vector<int>& numbers, int count)
-{
-    std::vector<int> numbers_copy(numbers); 
-    std::vector<int> result;
-    for( int n = 0; n < count; n++)
-    {
-        int max = -1;
-        int max_index = -1;
-        for ( int i = 0; i < numbers_copy.size(); i++)
-        {
-            if ( numbers_copy[i] > max )
-            {
-                max = numbers_copy[i];
-                max_index = i;
-            }
-        }
-        numbers_copy[max_index] = -1;
-        result.push_back(max_index);
-    }
-    
-    return result;
-}
-
-// https://stackoverflow.com/questions/1577475/c-sorting-and-keeping-track-of-indexes
-std::vector<int> arg_max_sort(const std::vector<int>& numbers)
-{
-    vector<int> idx(numbers.size());
-    iota(idx.begin(), idx.end(), 0);
-
-    stable_sort(idx.begin(), idx.end(),
-       [&numbers](int i1, int i2) {return numbers[i1] > numbers[i2];});
-
-  return idx;
-}
-
-bool verify_key(int a, int b, std::vector<int>& arg_max_vector, int n)
-{
-    for ( int  i = 0; i < n; i++)
-    {
-        int symbol_num = char_to_num(symbols_by_frequency[i]);
-        if ( (a* symbol_num + b) % 26 != arg_max_vector[i])
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-void get_key_candidates(std::vector<int>& arg_max_vector, int n)
-{
-    for ( int a : {1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25 })
-    {
-        for ( int b = 0; b < 26; b++ )
-        {
-            if ( verify_key(a, b, arg_max_vector, n))
-            {
-                std::cout << "a:" << a << " b:" << b << '\n';
-            }
-        }
-    }
-}
-
 float get_deviation(const std::vector<float> v1, const float v2[])
 {
     float deviation = 0.0;
@@ -333,18 +241,6 @@ void brute_force_analysis(Arguments& arguments)
     }
     int best_a = multiplicative_inverse(best_a_inverse);
     std::cout << "a:" << best_a << " b:" << best_b << " deviation: " << best_deviation << '\n';
-}
-
-void find_key_and_decrypt(Arguments& arguments)
-{
-    int max_n = 2;
-    std::vector<int> counts = get_counts(arguments.input_string);
-    std::vector<int> arg_max_vector = arg_max_sort(counts);
-    for ( int i : arg_max_vector )
-    {
-        std::cout << "Arg max: " << char(i+'a') << ":" << counts[i] << '\n';
-    }
-    get_key_candidates(arg_max_vector, max_n);
 }
 
 void choose_job(Arguments& arguments)
