@@ -1,8 +1,68 @@
 #include <iostream>
 #include <getopt.h>
 #include <string>
+#include <vector>
 
 using namespace std;
+
+
+const float frequencies[] = {
+	0.09589269,  //a	
+	0.0177612 ,  //b
+	0.02999077,  //c	
+	0.03774841,  //d	
+	0.10904081,  //e	
+	0.0017506 ,  //f
+	0.00219812,  //g	
+	0.02497482,  //h	
+	0.06686138,  //i	
+	0.02305759,  //j	
+	0.03528082,  //k	
+	0.05720782,  //l	
+	0.0360545 ,  //m
+	0.05917244,  //n
+	0.08029999,  //o
+	0.03114961,  //p
+	0.00005933,  //q
+	0.04396827,  //r
+	0.0558597 ,  //s	
+    0.05385289,  //t
+	0.03579031,  //u
+	0.03952464,  //v
+	0.00054266,  //w
+	0.0003591 ,  //x	
+    0.02857512,  //y
+	0.03302643,  //z
+};
+
+const char symbols_by_frequency[]{
+	'e', //0.10904081 	
+    'a', //0.09589269 	
+	'o', //0.08029999 
+	'i', //0.06686138 	
+	'n', //0.05917244 
+	'l', //0.05720782 	
+	's', //0.0558597  	
+    't', //0.05385289 
+	'r', //0.04396827 
+	'v', //0.03952464 
+	'd', //0.03774841 	
+	'm', //0.0360545  
+	'u', //0.03579031 
+	'k', //0.03528082 	
+	'z', //0.03302643 
+	'p', //0.03114961 
+	'c', //0.02999077 	
+    'y', //0.02857512 
+	'h', //0.02497482 	
+	'j', //0.02305759 	
+	'b', //0.0177612  
+	'g', //0.00219812 	
+	'f', //0.0017506  
+	'w', //0.00054266 
+	'x', //0.0003591  	
+	'q', //0.00005933 
+};
 
 typedef struct Arguments{
   int a;
@@ -155,23 +215,85 @@ std::string decrypt(Arguments& arguments)
     return answer;
 }
 
-void find_key_and_decrypt(Arguments& arguments)
+std::vector<int> get_counts(std::string str)
 {
-    for ( int a = 0; a < 26; a++)
+    std::vector<int> counts(26, 0);
+    for (int i = 0; i < str.size(); i++)
     {
-        
-        for ( int b = 0; b < 26; b++ )
+        int num = char_to_num(str[i]);
+        if ( num != -1)
         {
-            arguments.a = a;
-            arguments.b = b;
-            std::string answer = decrypt(arguments);
-            if (answer.length() != 0)
-            {
-                std::cout << "a: " << a << " b: " << b << ' ' << answer << std::endl;
-            }
-            
+            counts[num] += 1;
         }
     }
+    return counts;
+}
+
+std::vector<int> arg_max_n(const std::vector<int>& numbers, int count)
+{
+    std::vector<int> numbers_copy(numbers); 
+    std::vector<int> result;
+    for( int n = 0; n < count; n++)
+    {
+        int max = -1;
+        int max_index = -1;
+        for ( int i = 0; i < numbers_copy.size(); i++)
+        {
+            if ( numbers_copy[i] > max )
+            {
+                max = numbers_copy[i];
+                max_index = i;
+            }
+        }
+        numbers_copy[max_index] = -1;
+        result.push_back(max_index);
+    }
+    
+    return result;
+}
+
+bool verify_key(int a, int b, std::vector<int>& arg_max_vector)
+{
+    for ( int  i = 0; i < arg_max_vector.size(); i++)
+    {
+        int symbol_num = char_to_num(symbols_by_frequency[i]);
+        if ( (a* symbol_num + b) % 26 != arg_max_vector[i])
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+void get_key_candidates(std::vector<int>& arg_max_vector)
+{
+    for ( int a : {1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25 })
+    {
+        for ( int b = 0; b < 26; b++ )
+        {
+            if ( verify_key(a, b, arg_max_vector))
+            {
+                std::cout << "a:" << a << " b:" << b << '\n';
+            }
+        }
+    }
+}
+
+void find_key_and_decrypt(Arguments& arguments)
+{
+    std::vector<int> counts = get_counts(arguments.input_string);
+    for ( int num : counts)
+    {
+        std::cout << num << ' ';
+    }
+    std::cout << '\n';
+    int max_n = 2;
+    std::vector<int> arg_max_vector = arg_max_n(counts, max_n);
+    for ( int i : arg_max_vector )
+    {
+        std::cout << "Arg max: " << char(i+'a') << ":" << counts[i] << '\n';
+    }
+    get_key_candidates(arg_max_vector);
 }
 
 void choose_job(Arguments& arguments)
