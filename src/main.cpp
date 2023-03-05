@@ -3,8 +3,8 @@
 #include <string>
 #include <vector>
 #include <numeric>
-#include <algorithm>
-
+#include <fstream>
+#include <sstream>
 
 using namespace std;
 const int alphabet_size = 26;
@@ -43,6 +43,8 @@ typedef struct Arguments{
   int b;
   char type;
   std::string input_string;
+  std::string input_file;
+  std::string output_file;
 } arguments;
 
 bool handle_arguments(int argc, char *argv[], Arguments& arguments)
@@ -95,9 +97,12 @@ bool handle_arguments(int argc, char *argv[], Arguments& arguments)
                 break;
             case 'f': 
                 std::cerr << "input filename: " << optarg << "\n"; 
+                arguments.input_file = std::string(optarg);
                 break;
             case 'o': 
-                std::cerr << "output filename: " << optarg << "\n"; 
+                std::cerr << "output filename: " << optarg << "\n";
+                arguments.output_file = std::string(optarg);
+
                 break;
             case ':': 
                 std::cerr << "option '" << char(optopt) << "' needs a value\n"; 
@@ -227,7 +232,7 @@ void brute_force_analysis(Arguments& arguments)
             for ( int x = 0; x < alphabet_size; x++)
             {
                 int index_x = ( a_inverse*( (x - b + alphabet_size)) )%alphabet_size;
-                count_guess[index_x] = counts[x] / sum_counts;
+                count_guess[index_x] = float(counts[x]) / sum_counts;
             }
             float deviation = get_deviation(count_guess, frequencies);
             if ( deviation < best_deviation)
@@ -235,10 +240,12 @@ void brute_force_analysis(Arguments& arguments)
                 best_a_inverse = a_inverse;
                 best_b = b;
                 best_deviation = deviation;
-            }
+            }            
         }
     }
     int best_a = multiplicative_inverse(best_a_inverse);
+    arguments.a = best_a;
+    arguments.b = best_b;
     std::cout << "a:" << best_a << " b:" << best_b << " deviation: " << best_deviation << '\n';
 }
 
@@ -259,9 +266,35 @@ void choose_job(Arguments& arguments)
     }
 }
 
+void test_csv()
+{
+    std::ifstream file;
+    file.open("data/ciphertext.csv");
+    std::ofstream output("data/ciphertext_output.csv");
+    vector<string> row;
+    string line, word;
+    Arguments arguments;
+    while(getline(file, line))
+    {
+        row.clear();
+        stringstream str(line);
+        while(getline(str, word, ','))
+        {
+            row.push_back(word);
+        }
+        output << row[0] << ',';
+        arguments.input_string = row[1];
+        brute_force_analysis(arguments);
+        output << arguments.a << ',' << arguments.b << ',';
+        std::string decrypted = decrypt(arguments);
+        output << decrypted << '\n';
+    }
+}
+
 int main(int argc, char *argv[])
 {
-    Arguments arguments;
-    handle_arguments(argc, argv, arguments);
-    choose_job(arguments);
+    test_csv();
+    // Arguments arguments;
+    // handle_arguments(argc, argv, arguments);
+    // choose_job(arguments);
 }
