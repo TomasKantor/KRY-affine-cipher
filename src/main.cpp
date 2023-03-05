@@ -2,8 +2,12 @@
 #include <getopt.h>
 #include <string>
 #include <vector>
+#include <numeric>
+#include <algorithm>
+
 
 using namespace std;
+const int alphabet_size = 26;
 
 
 const float frequencies[] = {
@@ -135,7 +139,7 @@ bool handle_arguments(int argc, char *argv[], Arguments& arguments)
     }
     for (int index = optind; index < argc; index++)
     {
-        printf ("Input text is %s\n", argv[index]);
+        // printf ("Input text is %s\n", argv[index]);
         arguments.input_string = std::string(argv[index]);
     }
 
@@ -252,9 +256,21 @@ std::vector<int> arg_max_n(const std::vector<int>& numbers, int count)
     return result;
 }
 
-bool verify_key(int a, int b, std::vector<int>& arg_max_vector)
+// https://stackoverflow.com/questions/1577475/c-sorting-and-keeping-track-of-indexes
+std::vector<int> arg_max_sort(const std::vector<int>& numbers)
 {
-    for ( int  i = 0; i < arg_max_vector.size(); i++)
+    vector<int> idx(numbers.size());
+    iota(idx.begin(), idx.end(), 0);
+
+    stable_sort(idx.begin(), idx.end(),
+       [&numbers](int i1, int i2) {return numbers[i1] > numbers[i2];});
+
+  return idx;
+}
+
+bool verify_key(int a, int b, std::vector<int>& arg_max_vector, int n)
+{
+    for ( int  i = 0; i < n; i++)
     {
         int symbol_num = char_to_num(symbols_by_frequency[i]);
         if ( (a* symbol_num + b) % 26 != arg_max_vector[i])
@@ -265,13 +281,13 @@ bool verify_key(int a, int b, std::vector<int>& arg_max_vector)
     return true;
 }
 
-void get_key_candidates(std::vector<int>& arg_max_vector)
+void get_key_candidates(std::vector<int>& arg_max_vector, int n)
 {
     for ( int a : {1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25 })
     {
         for ( int b = 0; b < 26; b++ )
         {
-            if ( verify_key(a, b, arg_max_vector))
+            if ( verify_key(a, b, arg_max_vector, n))
             {
                 std::cout << "a:" << a << " b:" << b << '\n';
             }
@@ -279,21 +295,56 @@ void get_key_candidates(std::vector<int>& arg_max_vector)
     }
 }
 
-void find_key_and_decrypt(Arguments& arguments)
+float get_deviation(const std::vector<float> v1, const float v2[])
+{
+    float deviation = 0.0;
+    for (int i = 0; i < 26; i++)
+    {
+        deviation += (v1[i] - v2[i])*(v1[i] - v2[i]);
+    }
+    return deviation;
+}
+
+void brute_force_analysis(Arguments& arguments)
 {
     std::vector<int> counts = get_counts(arguments.input_string);
-    for ( int num : counts)
+    std::vector<float> count_guess(26);
+    int sum_counts = std::accumulate(counts.begin(), counts.end(), 0);
+    int best_a_inverse;
+    int best_b;
+    float best_deviation = 26.0;
+    for ( int a_inverse : {1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25 })
     {
-        std::cout << num << ' ';
+        for ( int b = 0; b < 26; b++ )
+        {
+            for ( int x = 0; x < 26; x++)
+            {
+                int index_x = ( a_inverse*( (x - b + 26)) )%26;
+                count_guess[index_x] = counts[x] / sum_counts;
+            }
+            float deviation = get_deviation(count_guess, frequencies);
+            if ( deviation < best_deviation)
+            {
+                best_a_inverse = a_inverse;
+                best_b = b;
+                best_deviation = deviation;
+            }
+        }
     }
-    std::cout << '\n';
+    int best_a = multiplicative_inverse(best_a_inverse);
+    std::cout << "a:" << best_a << " b:" << best_b << " deviation: " << best_deviation << '\n';
+}
+
+void find_key_and_decrypt(Arguments& arguments)
+{
     int max_n = 2;
-    std::vector<int> arg_max_vector = arg_max_n(counts, max_n);
+    std::vector<int> counts = get_counts(arguments.input_string);
+    std::vector<int> arg_max_vector = arg_max_sort(counts);
     for ( int i : arg_max_vector )
     {
         std::cout << "Arg max: " << char(i+'a') << ":" << counts[i] << '\n';
     }
-    get_key_candidates(arg_max_vector);
+    get_key_candidates(arg_max_vector, max_n);
 }
 
 void choose_job(Arguments& arguments)
@@ -309,7 +360,7 @@ void choose_job(Arguments& arguments)
     }
     else if (arguments.type == 'c')
     {
-        find_key_and_decrypt(arguments);
+        brute_force_analysis(arguments);
     }
 }
 
