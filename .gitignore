@@ -31,3 +31,6 @@
 *.out
 *.app
 kry
+
+# Visual Studio Code
+.vscode
