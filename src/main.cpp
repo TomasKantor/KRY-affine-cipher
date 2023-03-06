@@ -55,7 +55,7 @@ bool handle_arguments(int argc, char *argv[], Arguments& arguments)
     char type = 'n';
     std::string input_file_name;
     std::string output_file_name;
-    while((opt = getopt(argc, argv, ":edca:b:f:o:")) != -1) 
+    while((opt = getopt(argc, argv, ":edcta:b:f:o:")) != -1) 
     {
         switch(opt) 
         {
@@ -70,6 +70,10 @@ bool handle_arguments(int argc, char *argv[], Arguments& arguments)
             case 'c':
                 type = 'c';
                 std::cerr << "decryption, unknown key\n";
+                break;
+            case 't':
+                type = 't';
+                std::cerr << "Running test\n";
                 break;
             case 'a':
                 try
@@ -136,24 +140,24 @@ int char_to_num(char c)
     return -1;
 }
 
-void encrypt(Arguments& arguments)
+std::string encrypt(Arguments& arguments)
 {
     int a = arguments.a;
     int b = arguments.b;
-
+    std::string answer;
     for (int i = 0; i < arguments.input_string.length(); i++)
     {
         char x = char_to_num(arguments.input_string[i]);
         if ( x == -1)
         {
-            std::cout << ' ';
+            answer += ' ';
         }
         else
         {
-            std::cout << char((a*x  + b) % alphabet_size + 'A');
+            answer += char((a*x  + b) % alphabet_size + 'A');
         }
     }
-    std::cout << "\n";
+    return answer;
 }
 
 int multiplicative_inverse(int a)
@@ -217,7 +221,7 @@ float get_deviation(const std::vector<float> v1, const float v2[])
     return deviation;
 }
 
-void brute_force_analysis(Arguments& arguments)
+float brute_force_analysis(Arguments& arguments)
 {
     std::vector<int> counts = get_counts(arguments.input_string);
     std::vector<float> count_guess(alphabet_size);
@@ -246,24 +250,7 @@ void brute_force_analysis(Arguments& arguments)
     int best_a = multiplicative_inverse(best_a_inverse);
     arguments.a = best_a;
     arguments.b = best_b;
-    std::cout << "a:" << best_a << " b:" << best_b << " deviation: " << best_deviation << '\n';
-}
-
-void choose_job(Arguments& arguments)
-{
-    if (arguments.type == 'e')
-    {
-        encrypt(arguments);
-    }
-    else if (arguments.type == 'd')
-    {
-        std::string answer = decrypt(arguments);
-        std::cout << answer << '\n';
-    }
-    else if (arguments.type == 'c')
-    {
-        brute_force_analysis(arguments);
-    }
+    return best_deviation;
 }
 
 void test_csv()
@@ -276,25 +263,64 @@ void test_csv()
     Arguments arguments;
     while(getline(file, line))
     {
+        // read line to row
         row.clear();
         stringstream str(line);
         while(getline(str, word, ','))
         {
             row.push_back(word);
         }
+        // crack the code
+        float deviation = brute_force_analysis(arguments);
+        std::string decrypted = decrypt(arguments);
+        // output answer to file
         output << row[0] << ',';
         arguments.input_string = row[1];
-        brute_force_analysis(arguments);
         output << arguments.a << ',' << arguments.b << ',';
-        std::string decrypted = decrypt(arguments);
         output << decrypted << '\n';
+
+        std::cerr << "a:" << arguments.a << " b:" << arguments.b << " deviation: " << deviation << '\n';
+    }
+}
+
+void decrypt_unknown_key(Arguments& arguments)
+{
+    std::fstream input_stream;
+    input_stream.open(arguments.input_file, ios::in);
+    getline(input_stream, arguments.input_string);
+    brute_force_analysis(arguments);
+    std::string answer = decrypt(arguments);
+    std::ofstream output_stream;
+    output_stream.open(arguments.output_file);
+    output_stream << answer;
+    output_stream.close();
+}
+
+void choose_job(Arguments& arguments)
+{
+    if (arguments.type == 'e')
+    {
+        std::string answer = encrypt(arguments);
+        std::cout << answer << '\n';
+    }
+    else if (arguments.type == 'd')
+    {
+        std::string answer = decrypt(arguments);
+        std::cout << answer << '\n';
+    }
+    else if (arguments.type == 'c')
+    {
+        decrypt_unknown_key(arguments);
+    }
+    else if (arguments.type == 't')
+    {
+        test_csv();
     }
 }
 
 int main(int argc, char *argv[])
 {
-    test_csv();
-    // Arguments arguments;
-    // handle_arguments(argc, argv, arguments);
-    // choose_job(arguments);
+    Arguments arguments;
+    handle_arguments(argc, argv, arguments);
+    choose_job(arguments);
 }
