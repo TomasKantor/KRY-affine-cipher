@@ -310,6 +310,8 @@ void decrypt_unknown_key(Arguments& arguments)
     output_stream.open(arguments.output_file);
     output_stream << answer;
     output_stream.close();
+    // print keys
+    std::cout << "a=" << arguments.a << ",b=" << arguments.b << std::endl;
 }
 
 void choose_job(Arguments& arguments)
